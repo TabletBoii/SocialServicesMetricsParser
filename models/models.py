@@ -83,3 +83,16 @@ class Accounts(Model):
     bdate = Column("bdate", Date)
     sessionid = Column("sessionid", String)
     priority = Column("priority", Integer)
+
+
+class Tokens(Model):
+    __tablename__ = "twitter_tokens"
+
+    id = Column("id", Integer, primary_key=True)
+    bearer_token = Column("bearer_token", String)
+    access_token = Column("access_token", String)
+    access_token_secret = Column("access_token_secret", String)
+    api_key = Column("api_key", String)
+    api_key_secret = Column("api_key_secret", String)
+    requests = Column("requests", Integer)
+    requests_limit = Column("requests_limit", Integer)
