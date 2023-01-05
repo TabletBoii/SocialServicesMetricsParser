@@ -24,6 +24,7 @@ def serialize_response_to_json(url: str, headers=None, proxies=None, cookies=Non
         return response_json
     except Exception as e:
         print("Serializer fucked up\n", e)
+        return response
         
     #if response_json['status_code'] != 200:
     #    raise Exception(f"Request returned an error: {response_json['status_code']} {response}")

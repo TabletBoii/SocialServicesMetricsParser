@@ -1,3 +1,4 @@
+altgraph==0.17.3
 appdirs==1.4.4
 beautifulsoup4==4.11.1
 bs4==0.0.1
@@ -11,6 +12,8 @@ importlib-metadata==5.1.0
 lxml==4.9.1
 parse==1.19.0
 pyee==8.2.2
+pyinstaller==5.7.0
+pyinstaller-hooks-contrib==2022.14
 PyMySQL==1.0.2
 pyppeteer==1.0.2
 pyquery==1.4.3

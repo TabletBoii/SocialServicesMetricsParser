@@ -20,7 +20,6 @@ db_port_122: int = config['DATABASES']['MYSQL']['MYSQL.122']['port']
 db_name_122: str = config['DATABASES']['MYSQL']['MYSQL.122']['db']
 
 
-
 def instagram_parser_run():
     engine_121 = create_engine(f"mysql+pymysql://{db_username_121}:{db_password_121}@{db_url_121}:{db_port_121}/{db_name_121}", echo=False)
     engine_122 = create_engine(
@@ -43,7 +42,7 @@ def instagram_parser_run():
     engine_122.dispose()
 
 
-def test():
+def twitter_parser_run():
     engine_121 = create_engine(
         f"mysql+pymysql://{db_username_121}:{db_password_121}@{db_url_121}:{db_port_121}/{db_name_121}", echo=False)
     session_121 = Session(engine_121)
@@ -71,4 +70,4 @@ def runInParallel(*fns):
 
 
 if __name__ == "__main__":
-    instagram_parser_run()
+    runInParallel(instagram_parser_run, twitter_parser_run)

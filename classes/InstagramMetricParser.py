@@ -1,7 +1,6 @@
 import time
 from abc import ABC
 from sqlalchemy import desc
-from json import JSONDecodeError
 from sqlalchemy import select, update
 from datetime import datetime, date, timedelta
 from abstarction import SocMetricParserAbstraction
@@ -20,10 +19,8 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
             .where(Accounts.soc_type == 4, Accounts.type == "INST_METRIC_PARSER", Accounts.work == 1)
         ).fetchone()[0]
         self.cookie = {'sessionid': available_cookies.sessionid}
-        print(self.cookie)
 
     def update_session(self):
-        print('session_id: ', self.cookie['sessionid'])
         self.sessions["session_122"].execute(
             update(Accounts)
             .where(Accounts.sessionid == self.cookie['sessionid'])
@@ -32,27 +29,31 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
         self.sessions["session_122"].commit()
         self.__get_instagram_accounts_cookie()
 
+    def response_by_url(self, url) -> dict:
+        while True:
+            resource_posts: dict = serialize_response_to_json(
+                url,
+                cookies=self.cookie,
+                headers=self.headers,
+                proxies=self.proxy)
+
+            if not isinstance(resource_posts, dict):
+                print("Either the account is banned, or fuck Alibek.")
+                self.update_session()
+                continue
+
+            if resource_posts['status'] == 'fail':
+                print("Either the account is banned, or fuck Alibek.")
+                self.update_session()
+                continue
+
+            return resource_posts
+
     def parse_profile_metrics(self, item: dict) -> None:
         parsed_username = parse_username_from_url(item['url'])
-        profile_json_info: dict = dict()
-        while True:
-            try:
-                profile_json_info = serialize_response_to_json(
-                    f'https://i.instagram.com/api/v1/users/web_profile_info/?username={parsed_username}',
-                    cookies=self.cookie,
-                    headers=self.headers,
-                    proxies=self.proxy)
-                if 'message' in profile_json_info:
-                    print('Account is banned')
-                    self.update_session()
-                    time.sleep(3)
-                    continue
-            except Exception as e:
-                print("Either the account is banned, or fuck Alibek.")
-                #self.update_session()
-                #time.sleep(5)
-                continue
-            break
+        get_resources_url = f'https://i.instagram.com/api/v1/users/web_profile_info/?username={parsed_username}'
+        profile_json_info = self.response_by_url(get_resources_url)
+        # print(profile_json_info)
         self.s_date = item['s_date']
         self.f_date = item['f_date']
         profile_followers: int = profile_json_info['data']['user']['edge_followed_by']['count']
@@ -100,20 +101,10 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
     def parse_profile_posts(self, item: dict) -> None:
         profile_cursor = ''
         while True:
-            resource_posts: dict = dict()
-            while True:
-                try:
-                    resource_posts: dict = serialize_response_to_json(
-                        f'https://www.instagram.com/graphql/query/?query_id=17888483320059182&variables=%7B"id":{self.profile_id}, "first": "50", "after": "{profile_cursor}"%7D',
-                        cookies=self.cookie,
-                        headers=self.headers,
-                        proxies=self.proxy)
-                    break
-                except JSONDecodeError:
-                    print("Either the account is banned, or fuck Alibek.")
-                    self.update_session()
-                    continue
-            # If data keyword error then account was banned
+            get_posts_url = f'https://www.instagram.com/graphql/query/?' \
+                            f'query_id=17888483320059182&' \
+                            f'variables=%7B"id":{self.profile_id}, "first": "50", "after": "{profile_cursor}"%7D'
+            resource_posts = self.response_by_url(get_posts_url)
             number_of_posts_per_cursor = resource_posts['data']['user']['edge_owner_to_timeline_media']['count']
             if number_of_posts_per_cursor == 0:
                 print('No posts')
@@ -124,15 +115,19 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
                 time.mktime(datetime.strptime(item['f_date'], "%Y-%m-%d").timetuple())) + timedelta(
                 days=1)).timestamp()
             in_between_dates_posts = []
+
             for post in posts:
                 if s_date_unixtime <= post['node']['taken_at_timestamp'] <= f_date_unixtime:
                     in_between_dates_posts.append(post)
+
             if posts[len(posts) - 1]['node']['taken_at_timestamp'] >= f_date_unixtime:
                 profile_cursor = resource_posts['data']['user']['edge_owner_to_timeline_media']['page_info'][
                     'end_cursor']
                 continue
+
             if len(in_between_dates_posts) == 0:
                 break
+
             for post in in_between_dates_posts:
                 if len(post['node']['edge_media_to_caption']['edges']) == 0:
                     text = ''
@@ -146,7 +141,7 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
                     likes=post['node']['edge_media_preview_like']['count'],
                     comment=post['node']['edge_media_to_comment']['count'],
                     date=datetime.utcfromtimestamp(post['node']['taken_at_timestamp'])
-                                          .strftime('%Y-%m-%d'),
+                    .strftime('%Y-%m-%d'),
                 )
             if number_of_posts_per_cursor >= 50:
                 profile_cursor = resource_posts['data']['user']['edge_owner_to_timeline_media']['page_info'][
@@ -159,7 +154,6 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
             self.__get_instagram_accounts_cookie()
             self.parse_profile_metrics(item)
             self.parse_profile_posts(item)
-
 
     def __repr__(self):
         return str(self.resource_list)
