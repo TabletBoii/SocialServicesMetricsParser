@@ -43,8 +43,16 @@ def instagram_parser_run():
 
     sessions = {"session_121": session_121, "session_122": session_122, "session_52": session_52}
     headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 123.1.0.26.115 (iPhone11,8; iOS 13_3; en_US;     en-US; scale=2.00     ; 828x1792; 190542906)'}
+<<<<<<< HEAD
 
     insta = InstagramMetricParser(headers, sessions, soc_type=SocialEnum.instagram.value)
+=======
+    #headers = {'user-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0'}
+    proxies = {
+        'https': '' # paste your proxy data in format 'http://username:password@url:port'
+    }
+    insta = InstagramMetricParser(headers, sessions, proxies, soc_type=SocialEnum.instagram.value)
+>>>>>>> c8f5be6457ad520f5ae3039b09fee32de6407e8c
     insta.run()
     engine_121.dispose()
     engine_122.dispose()
