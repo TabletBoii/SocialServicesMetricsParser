@@ -6,10 +6,9 @@ from models.models import Tokens, Resources, ResourceMetrics
 from utilities.Utilities import parse_username_from_url, serialize_response_to_json
 
 class TwitterMetricParser(SocMetricParserAbstraction, ABC):
-    def __init__(self, header: dict, db_session: dict, proxy: dict, soc_type: int):
-        super().__init__(header, db_session, proxy, soc_type)
+    def __init__(self, header: dict, db_session: dict, soc_type: int):
+        super().__init__(header, db_session, soc_type)
         self.twitter_tokens: list[Tokens] = self.get_twitter_tokens()
-
     def get_twitter_tokens(self) -> list[tuple[Tokens]]:
         twitter_tokens = self.sessions["session_121"].execute(
             select(Tokens)
@@ -76,6 +75,7 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
                 self.sessions["session_121"].bulk_save_objects(insert_object)
                 self.sessions["session_121"].commit()
             print(f"Resource {resource[1]['url']} is up-to-date")
+            self.parsed_resources_counter += 1
 
     def parse_profile_posts(self) -> None:
         parsed_posts_buffered: list = []
@@ -115,7 +115,16 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
                     )
                 break
 
+    def set_proxy(self) -> None:
+        pass
+        
+
     def run(self) -> None:
+        token = "5744501838:AAHyz308WweSvGV9bzt-d43-Ihke2KAKI9I"
+        users = [-845330765]
+
+        self.telegram_logger_init(token, users)
         self.parse_profile_metrics()
         self.parse_profile_posts()
+        self.send_statistic_to_telegram()
 

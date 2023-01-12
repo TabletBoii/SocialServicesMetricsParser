@@ -96,3 +96,18 @@ class Tokens(Model):
     api_key_secret = Column("api_key_secret", String)
     requests = Column("requests", Integer)
     requests_limit = Column("requests_limit", Integer)
+
+
+class Proxy(Model):
+    __tablename__ = "proxies"
+
+    id = Column("id", Integer, primary_key=True)
+    proxy = Column("proxy", String)
+    port = Column("port", String)
+    login = Column("login", String)
+    password = Column("password", String)
+    use_date = Column("use_date", Date)
+    expiry_date = Column('expiry_date', Date)
+    script = Column("script", String)
+    error = Column("error", String)
+    status = Column("status", Integer)
