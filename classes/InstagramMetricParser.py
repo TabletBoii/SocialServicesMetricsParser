@@ -1,12 +1,17 @@
+"""
+    Child class inherited from SocMetricParser for instagram.
+    This class using instagram api v1.0 with tabular method.
+"""
 import time
 from abc import ABC
+from datetime import datetime, date, timedelta
 from sqlalchemy import desc
 from sqlalchemy import select, update
-from datetime import datetime, date, timedelta
+import pytz
 from abstarction import SocMetricParserAbstraction
 from models.models import Resources, ResourceMetrics, Accounts, Proxy
 from utilities.Utilities import serialize_response_to_json, parse_username_from_url
-import pytz
+
 
 
 class InstagramMetricParser(SocMetricParserAbstraction, ABC):
@@ -15,11 +20,24 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
         super().__init__(header, db_session, soc_type)
 
     def __get_instagram_accounts_cookie(self):
-        available_cookies: Accounts = self.sessions["session_122"].execute(
-            select(Accounts)
-            .where(Accounts.soc_type == 4, Accounts.type == "INST_METRIC_PARSER", Accounts.work == 1)
-        ).fetchone()[0]
-        self.cookie = {'sessionid': available_cookies.sessionid}
+        try:
+            available_cookies: Accounts = self.sessions["session_122"].execute(
+                select(Accounts)
+                .where(Accounts.soc_type == 4,
+                    Accounts.type == "INST_METRIC_PARSER",
+                    Accounts.work == 1
+                    )
+            ).fetchone()
+            if len(available_cookies) == 0:
+                self.logger.info("No available sessions")
+                exit()
+            available_cookies = available_cookies[0]
+            self.cookie = {'sessionid': available_cookies.sessionid}
+        except Exception as error:
+            print("Accounts ended")
+            print(error)
+            exit()
+        
 
     def update_session(self):
         self.sessions["session_122"].execute(
@@ -31,36 +49,31 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
         self.used_accounts += 1
         self.__get_instagram_accounts_cookie()
 
-    def response_by_url(self, url) -> dict:
-        while True:
-            resource_posts: dict = serialize_response_to_json(
-                url,
-                cookies=self.cookie,
-                headers=self.headers,
-                proxies=self.proxy)
-
-            if not isinstance(resource_posts, dict):
-                print("Either the account is banned, or fuck Alibek.")
-                self.update_session()
-                continue
-
-            if resource_posts['status'] == 'fail':
-                print("Either the account is banned, or fuck Alibek.")
-                self.update_session()
-                continue
-
-            return resource_posts
-
     def set_proxy(self) -> None:
+
+        if self.proxy_instance is not None:
+            self.sessions["session_52"].execute(
+                update(Proxy)
+                .where(Proxy.id == self.proxy_instance.id)
+                .values(status=2)
+            )
+            self.sessions["session_52"].commit()
+
         proxy: Proxy = self.sessions["session_52"].execute(
             select(Proxy)
-            .where(Proxy.status != 2, Proxy.expiry_date > datetime.now(), Proxy.script == 'mediarating_parser')
-        ).fetchone()[0]
-
+            .where(Proxy.status == 2,
+                   Proxy.expiry_date > datetime.now(),
+                   Proxy.script == 'mediarating_parser'
+                )
+        ).fetchone()
+        if len(proxy) == 0:
+            self.logger.info("No available proxy")
+            exit()
+        proxy = proxy[0]
         self.proxy = {
             'https': f'http://{proxy.login}:{proxy.password}@{proxy.proxy}:{proxy.port}'
         }
-
+        self.proxy_instance = proxy
         current_datetime = datetime.now(
             pytz.timezone("Asia/Almaty")).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -70,11 +83,28 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
             .values(use_date=current_datetime)
         )
         self.sessions["session_52"].commit()
-        
+
+    def response_by_url(self, url) -> dict:
+        while True:
+            resource_posts: dict = serialize_response_to_json(
+                url,
+                cookies=self.cookie,
+                headers=self.headers,
+                proxies=self.proxy)
+            print(resource_posts)
+            print(self.proxy)
+            if resource_posts['status'] == 'fail':
+                print("Either the account is banned, or fuck Alibek.")
+                self.set_proxy()
+                self.update_session()
+                continue
+
+            return resource_posts
 
     def parse_profile_metrics(self, item: dict) -> None:
         parsed_username = parse_username_from_url(item['url'])
-        get_resources_url = f'https://i.instagram.com/api/v1/users/web_profile_info/?username={parsed_username}'
+        get_resources_url = f'https://i.instagram.com/api/v1/users/web_profile_info/? \
+                              username={parsed_username}'
         profile_json_info = self.response_by_url(get_resources_url)
         self.s_date = item['s_date']
         self.f_date = item['f_date']
@@ -126,9 +156,14 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
         while True:
             get_posts_url = f'https://www.instagram.com/graphql/query/?' \
                             f'query_id=17888483320059182&' \
-                            f'variables=%7B"id":{self.profile_id}, "first": "50", "after": "{profile_cursor}"%7D'
+                            f'variables=%7B"id":{self.profile_id}, \
+                            "first": "50",  \
+                            "after": "{profile_cursor}"%7D'
             resource_posts = self.response_by_url(get_posts_url)
-            number_of_posts_per_cursor = resource_posts['data']['user']['edge_owner_to_timeline_media']['count']
+            number_of_posts_per_cursor = resource_posts['data'] \
+                                                       ['user'] \
+                                                       ['edge_owner_to_timeline_media'] \
+                                                       ['count']
             if number_of_posts_per_cursor == 0:
                 print('No posts')
                 break
@@ -144,8 +179,11 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
                     in_between_dates_posts.append(post)
 
             if posts[len(posts) - 1]['node']['taken_at_timestamp'] >= f_date_unixtime:
-                profile_cursor = resource_posts['data']['user']['edge_owner_to_timeline_media']['page_info'][
-                    'end_cursor']
+                profile_cursor = resource_posts['data'] \
+                                               ['user'] \
+                                               ['edge_owner_to_timeline_media'] \
+                                               ['page_info'] \
+                                               ['end_cursor']
                 continue
 
             if len(in_between_dates_posts) == 0:
@@ -165,9 +203,13 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
                     comment=post['node']['edge_media_to_comment']['count'],
                     date=datetime.utcfromtimestamp(post['node']['taken_at_timestamp'])
                     .strftime('%Y-%m-%d'),
+                    db_session=self.sessions["session_121"]
                 )
             if number_of_posts_per_cursor >= 50:
-                profile_cursor = resource_posts['data']['user']['edge_owner_to_timeline_media']['page_info'][
+                profile_cursor = resource_posts['data'] \
+                                               ['user'] \
+                                               ['edge_owner_to_timeline_media'] \
+                                               ['page_info'][
                     'end_cursor']
                 continue
             break

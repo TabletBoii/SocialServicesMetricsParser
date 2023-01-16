@@ -42,8 +42,17 @@ def instagram_parser_run():
     session_52 = Session(engine_52)
 
     sessions = {"session_121": session_121, "session_122": session_122, "session_52": session_52}
-    headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 239.2.0.17.109 (iPhone13,3; iOS 15_5; en_US; en-US; scale=3.00     ; 1170x2532; 376668393)'}
+    headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 123.1.0.26.115 (iPhone11,8; iOS 13_3; en_US;     en-US; scale=2.00     ; 828x1792; 190542906)'}
+<<<<<<< HEAD
+
     insta = InstagramMetricParser(headers, sessions, soc_type=SocialEnum.instagram.value)
+=======
+    #headers = {'user-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0'}
+    proxies = {
+        'https': '' # paste your proxy data in format 'http://username:password@url:port'
+    }
+    insta = InstagramMetricParser(headers, sessions, proxies, soc_type=SocialEnum.instagram.value)
+>>>>>>> c8f5be6457ad520f5ae3039b09fee32de6407e8c
     insta.run()
     engine_121.dispose()
     engine_122.dispose()
@@ -60,20 +69,20 @@ def twitter_parser_run():
     headers = {
         "User-Agent": "v2UserLookupPython"
     }
-    tw_parser = TwitterMetricParser(headers, sessions, soc_type=SocialEnum.twitter.value)
+    tw_parser = TwitterMetricParser(headers, sessions, SocialEnum.twitter.value)
     tw_parser.run()
     engine_121.dispose()
 
 
-def run_in_parallel(*functions):
-    process_list = []
-    for function in functions:
-        process = Process(target=function)
-        process.start()
-        process_list.append(process)
-    for process in process_list:
-        process.join()
+def runInParallel(*fns):
+  proc = []
+  for fn in fns:
+    p = Process(target=fn)
+    p.start()
+    proc.append(p)
+  for p in proc:
+    p.join()
 
 
 if __name__ == "__main__":
-    run_in_parallel(instagram_parser_run, twitter_parser_run)
+    runInParallel(instagram_parser_run, twitter_parser_run)

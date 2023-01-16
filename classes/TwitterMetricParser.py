@@ -1,3 +1,7 @@
+"""
+    Child class inherited from SocMetricParser for instagram. This class using twitter api
+    with tabular method.
+"""
 from abc import ABC
 from datetime import date
 from sqlalchemy import select, update, desc
@@ -19,6 +23,9 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
 
     def parse_profile_metrics(self) -> None:
         usernames: str = "usernames="
+        if len(self.resource_list) == 0:
+            self.logger.info("All resources is up-to-date. Finishing")
+            exit()
         for index, resource in enumerate(self.resource_list):
             if index == len(self.resource_list)-1:
                 username = parse_username_from_url(resource['url'])
@@ -35,6 +42,7 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
         db_twitter_zipped_list = list(zip(twitter_json_response, self.resource_list))
         self.resource_list = db_twitter_zipped_list
         for resource in db_twitter_zipped_list:
+            
             print("Getting metrics of resource ", resource[1]['url'])
             profile_followers = resource[0]['public_metrics']['followers_count']
             profile_follow = resource[0]['public_metrics']['following_count']
@@ -48,7 +56,8 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
                 self.sessions["session_121"].commit()
             last_date_updated = self.sessions["session_121"].execute(
                 select(ResourceMetrics.date)
-                .filter(ResourceMetrics.type == self.soc_type, ResourceMetrics.res_id == resource[1]['id'])
+                .filter(ResourceMetrics.type == self.soc_type,
+                        ResourceMetrics.res_id == resource[1]['id'])
                 .order_by(desc(ResourceMetrics.date))
                 .limit(2)
             ).all()
@@ -92,7 +101,8 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
 
                 twitter_json_response = serialize_response_to_json(url, headers=self.headers)
                 if twitter_json_response['meta']['result_count'] == 0:
-                    print(f"Resource {resource[0]['id']} hasn't posts in period {resource[1]['s_date']} - {resource[1]['f_date']}")
+                    print(f"Resource {resource[0]['id']} hasn't posts in period \
+                          {resource[1]['s_date']} - {resource[1]['f_date']}")
                     break
 
                 twitter_parsed_posts = twitter_json_response['data']
@@ -100,7 +110,9 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
                     parsed_posts_buffered.append(twitter_parsed_post)
                 if 'next_token' in twitter_json_response['meta']:
                     profile_cursor = f"pagination_token={twitter_json_response['meta']['next_token']}&"
-                if twitter_parsed_posts[len(twitter_parsed_posts)-1]['created_at'][:10] > resource[1]['s_date']:
+                if twitter_parsed_posts[len(twitter_parsed_posts)-1] \
+                                       ['created_at'] \
+                                       [:10] > resource[1]['s_date']:
                     continue
                 for parsed_post in parsed_posts_buffered:
                     self.add_relevant_posts(
@@ -112,12 +124,12 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
                         comment=parsed_post['public_metrics']['reply_count'],
                         reposts=parsed_post['public_metrics']['retweet_count'],
                         date=parsed_post['created_at'][:10],
+                        db_session=self.sessions["session_121"]
                     )
                 break
 
     def set_proxy(self) -> None:
         pass
-        
 
     def run(self) -> None:
         token = "5744501838:AAHyz308WweSvGV9bzt-d43-Ihke2KAKI9I"
@@ -127,4 +139,3 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
         self.parse_profile_metrics()
         self.parse_profile_posts()
         self.send_statistic_to_telegram()
-

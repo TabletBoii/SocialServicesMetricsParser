@@ -25,19 +25,19 @@ class InstParser:
     #     self.db = DataBase()
     #     self.db.DB_INFO = DB_TEMP_local
 
-    def select_items(self):
-        query = """SELECT * FROM resource_social LIMIT 1"""
-        answer = self.db.query_get(query)
+    # def select_items(self):
+    #     query = """SELECT * FROM resource_social LIMIT 1"""
+    #     answer = self.db.query_get(query)
 
-        return answer
+    #     return answer
 
-    def update_user(self, data, res_id):
-        query = f"""UPDATE resource_social SET resource_name=%s, screen_name=%s, image_profile=%s, members=%s, follows=%s, info_check = 1 WHERE id = {res_id}"""
+    # def update_user(self, data, res_id):
+    #     query = f"""UPDATE resource_social SET resource_name=%s, screen_name=%s, image_profile=%s, members=%s, follows=%s, info_check = 1 WHERE id = {res_id}"""
 
-        self.db.query_send(query, data)
+    #     self.db.query_send(query, data)
 
     def get_json(self, resourse_url, resource_id):
-        session_id = "56577518341%3ALF2s08C6EtLiQQ%3A20%3AAYdbQtEtQRIdPBx3_L_R64fpFFPJWKfYzrQk-xU8Lw"
+        session_id = "57506440295%3AVxorm2hjQD5IVz%3A22%3AAYe-mnOaUQ1B-WG7TDXdNKJJc3FXDBYY8ADOm1UjLg"
         cookies = {'sessionid': session_id}
         c = 0
 

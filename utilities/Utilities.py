@@ -18,14 +18,14 @@ def serialize_response_to_json(url: str, headers=None, proxies=None, cookies=Non
         url=url,
         cookies=cookies,
         headers=headers,
-        proxies=proxies).text
+        proxies=proxies,
+        timeout=10).text
     try:
         response_json: dict = json.loads(response)
         return response_json
-    except Exception as e:
-        print("Serializer fucked up\n", e)
+    except Exception as error:
+        print("Serializer fucked up\n", error)
         return response
-        
     #if response_json['status_code'] != 200:
     #    raise Exception(f"Request returned an error: {response_json['status_code']} {response}")
 
@@ -33,5 +33,3 @@ def parse_username_from_url(url: str) -> str:
     parsed_username = urlparse(url)
     parsed_username = re.sub('/', '', str(parsed_username.path))
     return parsed_username
-
-
