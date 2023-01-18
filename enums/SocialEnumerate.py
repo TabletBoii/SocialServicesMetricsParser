@@ -1,6 +1,9 @@
 import enum
 
 class SocialEnum(enum.Enum):
+    """
+        stores social network types
+    """
     vkontakte = 1
     facebook = 2
     twitter = 3

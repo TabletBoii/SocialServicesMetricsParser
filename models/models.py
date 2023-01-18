@@ -5,6 +5,9 @@ Model = declarative_base(name='Model')
 
 
 class Resources(Model):
+    """
+        representation of table `resources`, database server is 94.247.131.121
+    """
     __tablename__ = 'resources'
 
     id = Column('id', Integer, primary_key=True)
@@ -30,6 +33,9 @@ class Resources(Model):
 
 
 class ResourceMetrics(Model):
+    """
+        representation of table `sub_follow`, database server is 94.247.131.121, database name is `fb_candy`
+    """
     __tablename__ = 'sub_follow'
 
     id = Column('id', Integer, primary_key=True)
@@ -41,6 +47,9 @@ class ResourceMetrics(Model):
 
 
 class Posts(Model):
+    """
+        representation of table `res_posts`, database server is 94.247.131.121, database name is `fb_candy`
+    """
     __tablename__ = 'res_posts'
 
     id = Column('id', Integer, primary_key=True)
@@ -56,6 +65,9 @@ class Posts(Model):
 
 
 class PostMetrics(Model):
+    """
+        representation of table `posts_metrics`, database server is 94.247.131.121, database name is `fb_candy`
+    """
     __tablename__ = 'posts_metrics'
 
     id = Column('id', Integer, primary_key=True)
@@ -71,6 +83,9 @@ class PostMetrics(Model):
 
 
 class Accounts(Model):
+    """
+        representation of table `soc_accounts`, database server is 94.247.131.122, database name is `social_services`
+    """
     __tablename__ = "soc_accounts"
 
     id = Column("id", Integer, primary_key=True)
@@ -86,6 +101,9 @@ class Accounts(Model):
 
 
 class Tokens(Model):
+    """
+        representation of table `twitter_tokens`, database server is 94.247.131.121, database name is `fb_candy`
+    """
     __tablename__ = "twitter_tokens"
 
     id = Column("id", Integer, primary_key=True)
@@ -99,6 +117,10 @@ class Tokens(Model):
 
 
 class Proxy(Model):
+    """
+        representation of table `proxies`, database server is 94.247.130.52, database name is `recognition_service`
+        *Do not ask me, why recognition_service. Shit happens*
+    """
     __tablename__ = "proxies"
 
     id = Column("id", Integer, primary_key=True)

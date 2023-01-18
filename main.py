@@ -27,6 +27,9 @@ db_name_52: str = config['DATABASES']['MYSQL']['MYSQL.52']['db']
 
 
 def instagram_parser_run():
+    """
+        starts the Instagram parser
+    """
     engine_121 = create_engine(
         f"mysql+pymysql://{db_username_121}:{db_password_121}@{db_url_121}:{db_port_121}/{db_name_121}", echo=False
     )
@@ -50,12 +53,15 @@ def instagram_parser_run():
 
 
 def twitter_parser_run():
+    """
+        starts the Twitter parser
+    """
     engine_121 = create_engine(
         f"mysql+pymysql://{db_username_121}:{db_password_121}@{db_url_121}:{db_port_121}/{db_name_121}", echo=False
     )
 
     session_121 = Session(engine_121)
-    
+
     sessions = {"session_121": session_121}
     headers = {
         "User-Agent": "v2UserLookupPython"
@@ -66,6 +72,10 @@ def twitter_parser_run():
 
 
 def run_in_parallel(*functions):
+    """
+        starts multiple parsers in parallel processes
+
+    """
     process_list = []
     for function in functions:
         process = Process(target=function)

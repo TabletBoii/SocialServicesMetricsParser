@@ -80,11 +80,16 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
 
         proxy: Proxy = self.sessions["session_52"].execute(
             select(Proxy)
-            .where(Proxy.status == 2,
+            .where(Proxy.status != 2,
                    Proxy.expiry_date > datetime.now(),
                    Proxy.script == 'mediarating_parser'
                 )
         ).fetchone()
+
+        if proxy is None:
+            self.logger.info("No available proxy")
+            exit()
+
         if len(proxy) == 0:
             self.logger.info("No available proxy")
             exit()
@@ -117,12 +122,11 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
                 cookies=self.cookie,
                 headers=self.headers,
                 proxies=self.proxy)
+            print(resource_posts)
             if resource_posts['status'] == 'fail':
                 print("Either the account is banned, or fuck Alibek.")
-                self.set_proxy()
                 self.update_session()
                 continue
-
             return resource_posts
 
     def parse_profile_metrics(self, item: dict) -> None:
@@ -132,8 +136,7 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
             :type item: dict
         """
         parsed_username = parse_username_from_url(item['url'])
-        get_resources_url = f'https://i.instagram.com/api/v1/users/web_profile_info/? \
-                              username={parsed_username}'
+        get_resources_url = f'https://i.instagram.com/api/v1/users/web_profile_info/?username={parsed_username}'
         profile_json_info = self.response_by_url(get_resources_url)
         self.s_date = item['s_date']
         self.f_date = item['f_date']
@@ -219,6 +222,7 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
                                                ['edge_owner_to_timeline_media'] \
                                                ['page_info'] \
                                                ['end_cursor']
+                time.sleep(2)
                 continue
 
             if len(in_between_dates_posts) == 0:
@@ -246,6 +250,7 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
                                                ['edge_owner_to_timeline_media'] \
                                                ['page_info'][
                     'end_cursor']
+                time.sleep(2)
                 continue
             break
 
@@ -257,10 +262,11 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
         users = [-845330765]
 
         self.telegram_logger_init(token, users)
+        self.set_proxy()
+        self.__get_instagram_accounts_cookie()
         for item in self.resource_list:
-            self.set_proxy()
-            self.__get_instagram_accounts_cookie()
             self.parse_profile_metrics(item)
+            time.sleep(2)
             self.parse_profile_posts(item)
         self.send_statistic_to_telegram()
 

@@ -12,7 +12,14 @@ from utilities.Utilities import parse_username_from_url, serialize_response_to_j
 class TwitterMetricParser(SocMetricParserAbstraction, ABC):
     def __init__(self, header: dict, db_session: dict, soc_type: int):
         """
+            inits SocMetricParserAbstaction with meta data and database session
 
+            :param header: steady header value
+            :type header: dict
+            :param db_session: dictionary of specified sql alchemy sessions
+            :type db_session: dict
+            :param soc_type: type of social network specified in SocTypes enum
+            :type soc_type: int
         """
         super().__init__(header, db_session, soc_type)
         self.twitter_tokens: list[Tokens] = self.get_twitter_tokens()
@@ -29,7 +36,7 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
 
     def parse_profile_metrics(self) -> None:
         """
-            
+            realization of abstract method for twitter resources via twitter api
         """
         usernames: str = "usernames="
         if len(self.resource_list) == 0:
@@ -97,7 +104,7 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
 
     def parse_profile_posts(self) -> None:
         """
-            
+            realization of abstract method for twitter posts via twitter api
         """
         parsed_posts_buffered: list = []
         for resource in self.resource_list:
@@ -148,7 +155,7 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
 
     def run(self) -> None:
         """
-            
+            realization of abstact method, intended to link the crucial methods and run the parser
         """
         token = "5744501838:AAHyz308WweSvGV9bzt-d43-Ihke2KAKI9I"
         users = [-845330765]
