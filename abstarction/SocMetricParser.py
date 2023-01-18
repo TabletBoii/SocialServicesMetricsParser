@@ -1,6 +1,3 @@
-"""
-    SocMetricParser abstraction which provides an interface for all metric parsers.
-"""
 import logging
 from logging import Logger
 from abc import ABC, abstractmethod
@@ -19,6 +16,16 @@ class SocMetricParserAbstraction(ABC):
     """
 
     def __init__(self, header: dict, db_session: dict[Session], soc_type: int):
+        """
+            inits SocMetricParserAbstaction with meta data and database session
+
+            :param header: steady header value
+            :type header: dict
+            :param db_session: dictionary of specified sql alchemy sessions
+            :type db_session: dict
+            :param soc_type: type of social network specified in SocTypes enum
+            :type soc_type: int
+        """
         self.headers = header
         self.cookie = None
         self.sessions: dict[Session] = db_session
@@ -36,12 +43,18 @@ class SocMetricParserAbstraction(ABC):
         self.used_accounts = 0
 
     def __del__(self):
+        """
+            closing all sessions when an instance of a class is destroyed
+        """
         for value in self.sessions.values():
             value.close()
 
     def update_resources_dates(self, res_id: int) -> None:
         """
-            Method which updates metric collection date
+            method which updates metric collection date
+
+            :param header: steady header value
+            :type header: dict
         """
         self.sessions["session_121"].execute(
             update(Resources)
@@ -52,7 +65,8 @@ class SocMetricParserAbstraction(ABC):
 
     def get_resources_up_to_date(self) -> list[tuple]:
         """
-            Method of obtaining resources for at least the last hour
+            method of obtaining resources for at least the last hour
+            :return: list of resources that was updated more than an hour ago
         """
         now = datetime.now(tz=pytz.timezone('Asia/Almaty'))
         hour_ago = now - timedelta(hours=1)
@@ -69,7 +83,14 @@ class SocMetricParserAbstraction(ABC):
                  db_session: Session
                 ) -> None:
         """
-            A common method for all parsers that adds posts and post metrics to the database.
+            a common method for all parsers that adds posts and post metrics to the database.
+
+            :param header: steady header value
+            :type header: dict
+            :param db_session: dictionary of specified sql alchemy sessions
+            :type db_session: dict
+            :param soc_type: type of social network specified in SocTypes enum
+            :type soc_type: int
         """
         is_post_duplicated: bool = False
         post_list_statement: Query = db_session.query(Posts).filter(Posts.type==self.soc_type)
@@ -102,6 +123,25 @@ class SocMetricParserAbstraction(ABC):
         """
             A common method for all parsers that adds posts and post metrics to the database
             via add_post method and updates metric collection date.
+
+            :param res_id: resource id received from database
+            :type res_id: int
+            :param item_id: item id received from social network API
+            :type item_id: dict
+            :param url: url of resource
+            :type url: str
+            :param text: content of post
+            :type text: str
+            :param likes: number of post likes received from social network API 
+            :type likes: int
+            :param comment: number of comments likes received from social network API 
+            :type comment: int
+            :param date: date then post was created
+            :type date: string
+            :param db_session: session taken from list of sql alchemy session
+            :type db_session: Session
+            :param reposts: number of reposts likes received from social network API 
+            :type reposts: int
         """
         post_object = Posts(
             type=self.soc_type,
@@ -135,6 +175,11 @@ class SocMetricParserAbstraction(ABC):
     def telegram_logger_init(self, token, user_list):
         """
             Method using tg_logger module to create logger attribute
+
+            :param token: api token of telegram bot
+            :type token: str
+            :param user_list: list of user chat ids
+            :type user_list: int
         """
         # Base logger
         logger = logging.getLogger(f"{self.soc_type}")
@@ -181,9 +226,15 @@ class SocMetricParserAbstraction(ABC):
     def parse_profile_posts(self, item: dict) -> None:
         """
             An abstract method responsible for different method of parsing posts metrics via social services api
+
+            :param item: single post from posts list
+            :type item: dict
         """
         pass
 
     @abstractmethod
     def run(self) -> None:
+        """
+            method for running the parser
+        """
         pass

@@ -17,9 +17,23 @@ from utilities.Utilities import serialize_response_to_json, parse_username_from_
 class InstagramMetricParser(SocMetricParserAbstraction, ABC):
 
     def __init__(self, header: dict, db_session: dict, soc_type: int):
+        """
+            inits SocMetricParserAbstaction with meta data and database session
+
+            :param header: steady header value
+            :type header: dict
+            :param db_session: dictionary of specified sql alchemy sessions
+            :type db_session: dict
+            :param soc_type: type of social network specified in SocTypes enum
+            :type soc_type: int
+        """
         super().__init__(header, db_session, soc_type)
 
     def __get_instagram_accounts_cookie(self):
+        """
+            getting instagram session from database
+            if there are no available sessions, the script closes
+        """
         try:
             available_cookies: Accounts = self.sessions["session_122"].execute(
                 select(Accounts)
@@ -35,11 +49,14 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
             self.cookie = {'sessionid': available_cookies.sessionid}
         except Exception as error:
             print("Accounts ended")
-            print(error)
+            self.logger.info("Accounts ended")
             exit()
         
 
     def update_session(self):
+        """
+            tries to get an Instagram session if the previous one was banned
+        """
         self.sessions["session_122"].execute(
             update(Accounts)
             .where(Accounts.sessionid == self.cookie['sessionid'])
@@ -50,7 +67,9 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
         self.__get_instagram_accounts_cookie()
 
     def set_proxy(self) -> None:
-
+        """
+            getting proxy from database
+        """
         if self.proxy_instance is not None:
             self.sessions["session_52"].execute(
                 update(Proxy)
@@ -85,14 +104,19 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
         self.sessions["session_52"].commit()
 
     def response_by_url(self, url) -> dict:
+        """
+            trying to get response from url
+            if session, proxy or header invalid, trying to change them
+
+            :param url: getting url to connect with instragram session
+            :type url: str
+        """
         while True:
             resource_posts: dict = serialize_response_to_json(
                 url,
                 cookies=self.cookie,
                 headers=self.headers,
                 proxies=self.proxy)
-            print(resource_posts)
-            print(self.proxy)
             if resource_posts['status'] == 'fail':
                 print("Either the account is banned, or fuck Alibek.")
                 self.set_proxy()
@@ -102,6 +126,11 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
             return resource_posts
 
     def parse_profile_metrics(self, item: dict) -> None:
+        """
+            realization of abstract method for instagram resources via instagram api
+            :param item: representation of instagram resource. example: https://www.instagram.com/police_astana_rop_saryarka/
+            :type item: dict
+        """
         parsed_username = parse_username_from_url(item['url'])
         get_resources_url = f'https://i.instagram.com/api/v1/users/web_profile_info/? \
                               username={parsed_username}'
@@ -152,6 +181,12 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
         self.profile_id = profile_id
 
     def parse_profile_posts(self, item: dict) -> None:
+        """
+            realization of abstract method for instagram posts via instagram api
+
+            :param item: representation of instagram resource. example: https://www.instagram.com/police_astana_rop_saryarka/
+            :type item: dict
+        """
         profile_cursor = ''
         while True:
             get_posts_url = f'https://www.instagram.com/graphql/query/?' \
@@ -215,6 +250,9 @@ class InstagramMetricParser(SocMetricParserAbstraction, ABC):
             break
 
     def run(self) -> None:
+        """
+            realization of abstact method, intended to link the crucial methods and run the parser
+        """
         token = "5744501838:AAHyz308WweSvGV9bzt-d43-Ihke2KAKI9I"
         users = [-845330765]
 

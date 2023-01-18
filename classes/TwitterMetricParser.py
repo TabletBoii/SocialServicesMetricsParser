@@ -11,9 +11,15 @@ from utilities.Utilities import parse_username_from_url, serialize_response_to_j
 
 class TwitterMetricParser(SocMetricParserAbstraction, ABC):
     def __init__(self, header: dict, db_session: dict, soc_type: int):
+        """
+
+        """
         super().__init__(header, db_session, soc_type)
         self.twitter_tokens: list[Tokens] = self.get_twitter_tokens()
     def get_twitter_tokens(self) -> list[tuple[Tokens]]:
+        """
+            
+        """
         twitter_tokens = self.sessions["session_121"].execute(
             select(Tokens)
             .where(Tokens.requests < Tokens.requests_limit)
@@ -22,6 +28,9 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
         return twitter_tokens
 
     def parse_profile_metrics(self) -> None:
+        """
+            
+        """
         usernames: str = "usernames="
         if len(self.resource_list) == 0:
             self.logger.info("All resources is up-to-date. Finishing")
@@ -87,6 +96,9 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
             self.parsed_resources_counter += 1
 
     def parse_profile_posts(self) -> None:
+        """
+            
+        """
         parsed_posts_buffered: list = []
         for resource in self.resource_list:
             profile_cursor = ''
@@ -129,9 +141,15 @@ class TwitterMetricParser(SocMetricParserAbstraction, ABC):
                 break
 
     def set_proxy(self) -> None:
+        """
+            
+        """
         pass
 
     def run(self) -> None:
+        """
+            
+        """
         token = "5744501838:AAHyz308WweSvGV9bzt-d43-Ihke2KAKI9I"
         users = [-845330765]
 
